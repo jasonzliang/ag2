@@ -161,9 +161,7 @@ def scrape(url):
    text = soup.find("div", {"id": "bodyContent"}).text
    return title, text
 ```
-""".replace(
-            "\n", "\r\n"
-        )
+""".replace("\n", "\r\n")
     )
     print(codeblocks)
     assert len(codeblocks) == 1 and codeblocks[0][0] == "python"
@@ -390,7 +388,7 @@ def test_create_virtual_env_with_extra_args():
 
 def _test_improve(credentials_all: Credentials):
     try:
-        import openai
+        import openai  # noqa: F401
     except ImportError:
         return
     config_list = credentials_all.config_list
