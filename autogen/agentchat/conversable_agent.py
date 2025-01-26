@@ -164,8 +164,6 @@ class ConversableAgent(LLMAgent):
             code_execution_config.copy() if hasattr(code_execution_config, "copy") else code_execution_config
         )
 
-        self._validate_name(name)
-        self._name = name
         # a dictionary of conversations, default value is list
         if chat_messages is None:
             self._oai_messages = defaultdict(list)
@@ -192,6 +190,8 @@ class ConversableAgent(LLMAgent):
                 ) from e
 
         self._validate_llm_config(llm_config)
+        self._validate_name(name)
+        self._name = name
 
         if logging_enabled():
             log_new_agent(self, locals())
@@ -287,6 +287,15 @@ class ConversableAgent(LLMAgent):
         }
 
     def _validate_name(self, name: str) -> None:
+        if not self.llm_config or "config_list" not in self.llm_config or len(self.llm_config["config_list"]) == 0:
+            return
+
+        config_list = self.llm_config.get("config_list")
+        # The validation is currently done only for openai endpoints
+        # (other ones do not have the issue with whitespace in the name)
+        if "api_type" in config_list[0] and config_list[0]["api_type"] != "openai":
+            return
+
         # Validation for name using regex to detect any whitespace
         if re.search(r"\s", name):
             raise ValueError(f"The name of the agent cannot contain any whitespace. The name provided is: '{name}'")
@@ -651,7 +660,7 @@ class ConversableAgent(LLMAgent):
                 for conversation in self._oai_messages.values():
                     return conversation[-1]
             raise ValueError("More than one conversation is found. Please specify the sender to get the last message.")
-        if agent not in self._oai_messages.keys():
+        if agent not in self._oai_messages:
             raise KeyError(
                 f"The agent '{agent.name}' is not present in any conversation. No history available for this agent."
             )
@@ -1896,12 +1905,12 @@ class ConversableAgent(LLMAgent):
         for the conversation and prints relevant messages based on the human input received.
 
         Args:
-            - messages (Optional[List[Dict]]): A list of message dictionaries, representing the conversation history.
-            - sender (Optional[Agent]): The agent object representing the sender of the message.
-            - config (Optional[Any]): Configuration object, defaults to the current instance if not provided.
+            messages (Optional[List[Dict]]): A list of message dictionaries, representing the conversation history.
+            sender (Optional[Agent]): The agent object representing the sender of the message.
+            config (Optional[Any]): Configuration object, defaults to the current instance if not provided.
 
         Returns:
-            - Tuple[bool, Union[str, Dict, None]]: A tuple containing a boolean indicating if the conversation
+            Tuple[bool, Union[str, Dict, None]]: A tuple containing a boolean indicating if the conversation
             should be terminated, and a human reply which can be a string, a dictionary, or None.
         """
         iostream = IOStream.get_default()
@@ -2235,10 +2244,7 @@ class ConversableAgent(LLMAgent):
             if lang in ["bash", "shell", "sh"]:
                 exitcode, logs, image = self.run_code(code, lang=lang, **self._code_execution_config)
             elif lang in PYTHON_VARIANTS:
-                if code.startswith("# filename: "):
-                    filename = code[11 : code.find("\n")].strip()
-                else:
-                    filename = None
+                filename = code[11 : code.find("\n")].strip() if code.startswith("# filename: ") else None
                 exitcode, logs, image = self.run_code(
                     code,
                     lang="python",
@@ -2503,7 +2509,7 @@ class ConversableAgent(LLMAgent):
         """
         for name, func in function_map.items():
             self._assert_valid_name(name)
-            if func is None and name not in self._function_map.keys():
+            if func is None and name not in self._function_map:
                 warnings.warn(f"The function {name} to remove doesn't exist", name)
             if name in self._function_map:
                 warnings.warn(f"Function '{name}' is being overridden.", UserWarning)
@@ -2526,7 +2532,7 @@ class ConversableAgent(LLMAgent):
             raise AssertionError(error_msg)
 
         if is_remove:
-            if "functions" not in self.llm_config.keys():
+            if "functions" not in self.llm_config:
                 error_msg = f"The agent config doesn't have function {func_sig}."
                 logger.error(error_msg)
                 raise AssertionError(error_msg)
@@ -2542,7 +2548,7 @@ class ConversableAgent(LLMAgent):
             if "name" not in func_sig:
                 raise ValueError(f"The function signature must have a 'name' key. Received: {func_sig}")
             self._assert_valid_name(func_sig["name"]), func_sig
-            if "functions" in self.llm_config.keys():
+            if "functions" in self.llm_config:
                 if any(func["name"] == func_sig["name"] for func in self.llm_config["functions"]):
                     warnings.warn(f"Function '{func_sig['name']}' is being overridden.", UserWarning)
 
@@ -2570,7 +2576,7 @@ class ConversableAgent(LLMAgent):
             raise AssertionError(error_msg)
 
         if is_remove:
-            if "tools" not in self.llm_config.keys():
+            if "tools" not in self.llm_config:
                 error_msg = f"The agent config doesn't have tool {tool_sig}."
                 logger.error(error_msg)
                 raise AssertionError(error_msg)

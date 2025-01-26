@@ -6,17 +6,11 @@
 # SPDX-License-Identifier: MIT
 from __future__ import annotations
 
-import sys
 from types import TracebackType
 from typing import Any
 
 from .abstract_cache_base import AbstractCache
 from .cache_factory import CacheFactory
-
-if sys.version_info >= (3, 11):
-    pass
-else:
-    pass
 
 
 class Cache(AbstractCache):
@@ -106,7 +100,7 @@ class Cache(AbstractCache):
         self.config["cache_seed"] = str(self.config.get("cache_seed", 42))
 
         # validate config
-        for key in self.config.keys():
+        for key in self.config:
             if key not in self.ALLOWED_CONFIG_KEYS:
                 raise ValueError(f"Invalid config key: {key}")
         # create cache instance

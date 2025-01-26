@@ -6,24 +6,18 @@
 # SPDX-License-Identifier: MIT
 import os
 import sys
+import uuid
 
-import pytest
+from autogen.agentchat.contrib.vectordb.qdrant import QdrantVectorDB
+from autogen.import_utils import optional_import_block, skip_on_missing_imports
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-try:
-    import uuid
-
+with optional_import_block() as result:
     from qdrant_client import QdrantClient
 
-    from autogen.agentchat.contrib.vectordb.qdrant import QdrantVectorDB
-except ImportError:
-    skip = True
-else:
-    skip = False
 
-
-@pytest.mark.skipif(skip, reason="dependency is not installed")
+@skip_on_missing_imports(["fastembed", "qdrant_client"], "retrievechat-qdrant")
 def test_qdrant():
     # test create collection
     client = QdrantClient(location=":memory:")

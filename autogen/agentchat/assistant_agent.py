@@ -6,8 +6,7 @@
 # SPDX-License-Identifier: MIT
 from typing import Callable, Literal, Optional, Union
 
-from autogen.runtime_logging import log_new_agent, logging_enabled
-
+from ..runtime_logging import log_new_agent, logging_enabled
 from .conversable_agent import ConversableAgent
 
 
@@ -79,6 +78,5 @@ Reply "TERMINATE" in the end when everything is done.
 
         # Update the provided description if None, and we are using the default system_message,
         # then use the default description.
-        if description is None:
-            if system_message == self.DEFAULT_SYSTEM_MESSAGE:
-                self.description = self.DEFAULT_DESCRIPTION
+        if description is None and system_message == self.DEFAULT_SYSTEM_MESSAGE:
+            self.description = self.DEFAULT_DESCRIPTION

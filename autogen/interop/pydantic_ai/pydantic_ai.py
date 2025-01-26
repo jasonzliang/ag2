@@ -9,6 +9,7 @@ from functools import wraps
 from inspect import signature
 from typing import Any, Callable, Optional
 
+from ...import_utils import optional_import_block
 from ..registry import register_interoperable_class
 from .pydantic_ai_tool import PydanticAITool as AG2PydanticAITool
 
@@ -122,8 +123,8 @@ class PydanticAIInteroperability:
                 UserWarning,
             )
 
-        if tool.takes_ctx:
-            ctx = RunContext(
+        ctx = (
+            RunContext(
                 deps=deps,
                 retry=0,
                 # All messages send to or returned by a model.
@@ -131,8 +132,9 @@ class PydanticAIInteroperability:
                 messages=[],  # TODO: check in the future if this is needed on Tool level
                 tool_name=pydantic_ai_tool.name,
             )
-        else:
-            ctx = None
+            if tool.takes_ctx
+            else None
+        )
 
         func = PydanticAIInteroperability.inject_params(
             ctx=ctx,
@@ -151,9 +153,10 @@ class PydanticAIInteroperability:
         if sys.version_info < (3, 9):
             return "This submodule is only supported for Python versions 3.9 and above"
 
-        try:
+        with optional_import_block() as result:
             import pydantic_ai.tools  # noqa: F401
-        except ImportError:
+
+        if not result.is_successful:
             return "Please install `interop-pydantic-ai` extra to use this module:\n\n\tpip install ag2[interop-pydantic-ai]"
 
         return None

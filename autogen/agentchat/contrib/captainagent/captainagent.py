@@ -8,10 +8,8 @@ from typing import Callable, Literal, Optional, Union
 
 from termcolor import colored
 
-import autogen
-from autogen import UserProxyAgent
-from autogen.agentchat.conversable_agent import ConversableAgent
-
+from .... import GroupChat, GroupChatManager, UserProxyAgent
+from ...conversable_agent import ConversableAgent
 from .agent_builder import AgentBuilder
 from .tool_retriever import ToolBuilder, format_ag2_tool, get_full_tool_description
 
@@ -376,7 +374,7 @@ Collect information from the general task, follow the suggestions from manager t
 
         builder = AgentBuilder(**self._nested_config["autobuild_init_config"])
         # if the group is already built, load from history
-        if group_name in self.build_history.keys():
+        if group_name in self.build_history:
             agent_list, agent_configs = builder.load(config_json=json.dumps(self.build_history[group_name]))
             if self._nested_config.get("autobuild_tool_config", None) and agent_configs["coding"] is True:
                 # tool library is enabled, reload tools and bind them to the agents
@@ -465,13 +463,13 @@ Collect information from the general task, follow the suggestions from manager t
 
         self.build_times += 1
         # start nested chat
-        nested_group_chat = autogen.GroupChat(
+        nested_group_chat = GroupChat(
             agents=agent_list,
             messages=[],
             allow_repeat_speaker=agent_list[:-1] if agent_configs["coding"] is True else agent_list,
             **self._nested_config["group_chat_config"],
         )
-        manager = autogen.GroupChatManager(
+        manager = GroupChatManager(
             groupchat=nested_group_chat,
             llm_config=self._nested_config["group_chat_llm_config"],
         )

@@ -4,8 +4,7 @@
 
 from typing import Any, Optional, Union
 
-from autogen import Agent, ConversableAgent, UserProxyAgent
-
+from .... import Agent, ConversableAgent, UserProxyAgent
 from .graph_query_engine import GraphStoreQueryResult
 from .graph_rag_capability import GraphRagCapability
 from .neo4j_graph_query_engine import Neo4jGraphQueryEngine
@@ -71,7 +70,6 @@ class Neo4jGraphCapability(GraphRagCapability):
         """Retrieves the last message from the conversation history."""
         if isinstance(message, str):
             return message
-        if isinstance(message, dict):
-            if "content" in message:
-                return message["content"]
+        if isinstance(message, dict) and "content" in message:
+            return message["content"]
         return None
