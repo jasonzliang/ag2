@@ -516,6 +516,7 @@ class OpenAIClient:
                     raise ModelToolNotSupportedError(params.get("model"))
                 self._process_reasoning_model_params(params)
             params["stream"] = False
+            # import pprint; pprint.pprint(params)
             response = create_or_parse(**params)
             # remove the system_message from the response and add it in the prompt at the start.
             if is_o1:

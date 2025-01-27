@@ -1104,6 +1104,21 @@ class ConversableAgent(LLMAgent):
             agent._raise_exception_on_async_reply_functions()
             agent.previous_cache = agent.client_cache
             agent.client_cache = cache
+        # if isinstance(max_turns, int):
+        #     self._prepare_chat(recipient, clear_history, reply_at_receive=False)
+        #     for _ in range(max_turns):
+        #         if _ == 0:
+        #             if isinstance(message, Callable):
+        #                 msg2send = message(_chat_info["sender"], _chat_info["recipient"], kwargs)
+        #             else:
+        #                 msg2send = self.generate_init_message(message, **kwargs)
+        #         else:
+        #             msg2send = self.generate_reply(messages=self.chat_messages[recipient], sender=recipient)
+        #         if msg2send is None:
+        #             break
+        #         self.send(msg2send, recipient, request_reply=True, silent=silent)
+        # else:
+
         if isinstance(max_turns, int):
             self._prepare_chat(recipient, clear_history, reply_at_receive=False)
             for _ in range(max_turns):
@@ -1116,7 +1131,16 @@ class ConversableAgent(LLMAgent):
                     msg2send = self.generate_reply(messages=self.chat_messages[recipient], sender=recipient)
                 if msg2send is None:
                     break
+
+                # Send message and ensure tool calls are completed
                 self.send(msg2send, recipient, request_reply=True, silent=silent)
+
+                # Add an explicit step to handle any pending tool calls
+                last_message = self.chat_messages[recipient][-1]
+                if last_message.get("tool_calls"):
+                    tool_reply = self.generate_tool_calls_reply(messages=self.chat_messages[recipient], sender=recipient)
+                    if tool_reply[1]:  # If there's a tool response
+                        self.send(tool_reply[1], recipient, silent=silent)
         else:
             self._prepare_chat(recipient, clear_history)
             if isinstance(message, Callable):
@@ -1285,6 +1309,7 @@ class ConversableAgent(LLMAgent):
                 prompt, msg_list, llm_agent=agent, cache=summary_args.get("cache"), role=role
             )
         except BadRequestError as e:
+            # import traceback; traceback.print_exc()
             warnings.warn(
                 f"Cannot extract summary using reflection_with_llm: {e}. Using an empty str as summary.", UserWarning
             )
