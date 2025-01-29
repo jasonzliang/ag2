@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -13,6 +13,8 @@ from time import sleep
 from typing import Callable, Optional, Union
 
 import numpy as np
+
+from ..doc_utils import export_module
 
 # Adding a NullHandler to silence FLAML log warning during
 # import
@@ -67,6 +69,7 @@ if not logger.handlers:
     logger.addHandler(_ch)
 
 
+@export_module("autogen")
 class Completion(OpenAICompletion):
     """`(openai<1)` A class for OpenAI completion API.
 
@@ -1218,6 +1221,7 @@ class Completion(OpenAICompletion):
         cls._history_dict = cls._count_create = None
 
 
+@export_module("autogen")
 class ChatCompletion(Completion):
     """`(openai<1)` A class for OpenAI API ChatCompletion. Share the same API as Completion."""
 

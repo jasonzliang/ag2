@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from autogen.agentchat import ConversableAgent, UserProxyAgent
 from autogen.tools import BaseContext, ChatContext, Depends
 
-from ..conftest import Credentials, credentials_all_llms
+from ..conftest import Credentials, credentials_all_llms, suppress_gemini_resource_exhausted
 
 
 class MyContext(BaseContext, BaseModel):
@@ -254,6 +254,7 @@ class TestDependencyInjection:
         )
 
     @pytest.mark.parametrize("credentials_from_test_param", credentials_all_llms, indirect=True)
+    @suppress_gemini_resource_exhausted
     @pytest.mark.parametrize("is_async", [False, True])
     @pytest.mark.asyncio
     async def test_end2end(

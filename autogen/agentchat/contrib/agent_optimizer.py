@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -183,7 +183,7 @@ class AgentOptimizer:
         Args:
             max_actions_per_step (int): the maximum number of actions that the optimizer can take in one step.
             llm_config (dict): llm inference configuration.
-                Please refer to [OpenAIWrapper.create](/docs/reference/oai/client#create) for available options.
+                Please refer to [OpenAIWrapper.create](/reference/autogen/OpenAIWrapper#create) for available options.
                 When using OpenAI or Azure OpenAI endpoints, please specify a non-empty 'model' either in `llm_config` or in each config of 'config_list' in `llm_config`.
             optimizer_model: the model used for the optimizer.
         """

@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -19,6 +19,7 @@ from typing import Any, Callable, ClassVar, Optional, Union
 from typing_extensions import ParamSpec
 
 from ..code_utils import PYTHON_VARIANTS, TIMEOUT_MSG, WIN32, _cmd
+from ..doc_utils import export_module
 from .base import CodeBlock, CodeExecutor, CodeExtractor, CommandLineCodeResult
 from .func_with_reqs import (
     FunctionWithRequirements,
@@ -34,6 +35,7 @@ __all__ = ("LocalCommandLineCodeExecutor",)
 A = ParamSpec("A")
 
 
+@export_module("autogen.coding")
 class LocalCommandLineCodeExecutor(CodeExecutor):
     SUPPORTED_LANGUAGES: ClassVar[list[str]] = [
         "bash",

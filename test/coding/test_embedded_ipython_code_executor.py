@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -70,9 +70,10 @@ if not skip_docker_test:
         "jupyter_client",
         "ipykernel",
     ],
-    "jupyter_executor",
+    "jupyter-executor",
 )
 @skip_on_missing_jupyter_kernel_gateway()
+@pytest.mark.jupyter_executor
 class TestCodeExecutor:
     def test_import_utils(self) -> None:
         pass

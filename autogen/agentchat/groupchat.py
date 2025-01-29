@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Literal, Optional, Union
 
 from ..code_utils import content_str
+from ..doc_utils import export_module
 from ..exception_utils import AgentNameConflict, NoEligibleSpeaker, UndefinedNextAgent
 from ..graph_utils import check_graph_validity, invert_disallowed_to_allowed
 from ..io.base import IOStream
@@ -38,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+@export_module("autogen")
 class GroupChat:
     """(In preview) A group chat class that contains the following data fields:
     - agents: a list of participating agents.
@@ -1009,6 +1011,7 @@ class GroupChat:
         return mentions
 
 
+@export_module("autogen")
 class GroupChatManager(ConversableAgent):
     """(In preview) A chat manager agent that can manage a group chat of multiple agents."""
 

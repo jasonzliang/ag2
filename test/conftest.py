@@ -1,19 +1,25 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
 # Portions derived from  https://github.com/microsoft/autogen are under the MIT License.
 # SPDX-License-Identifier: MIT
+import asyncio
+import functools
+import inspect
 import os
 import re
+import time
+from json.decoder import JSONDecodeError
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional, TypeVar
 
 import pytest
 from _pytest.outcomes import Skipped
 from pytest import CallInfo, Item
 
 import autogen
+from autogen.import_utils import optional_import_block
 
 KEY_LOC = str((Path(__file__).parents[1] / "notebook").resolve())
 OAI_CONFIG_LIST = "OAI_CONFIG_LIST"
@@ -119,6 +125,14 @@ class Credentials:
     @property
     def api_key(self) -> str:
         return self.llm_config["config_list"][0]["api_key"]  # type: ignore[no-any-return]
+
+    @property
+    def api_type(self) -> str:
+        return self.llm_config["config_list"][0].get("api_type", "openai")  # type: ignore[no-any-return]
+
+    @property
+    def model(self) -> str:
+        return self.llm_config["config_list"][0]["model"]  # type: ignore[no-any-return]
 
 
 class CensoredError(Exception):
@@ -285,9 +299,16 @@ def credentials() -> Credentials:
 
 
 @pytest.fixture
-def credentials_gemini_pro() -> Credentials:
+def credentials_gemini_flash() -> Credentials:
     return get_llm_credentials(
-        "GEMINI_API_KEY", model="gemini-pro", api_type="google", filter_dict={"tags": ["gemini-pro"]}
+        "GEMINI_API_KEY", model="gemini-1.5-flash", api_type="google", filter_dict={"tags": ["gemini-flash"]}
+    )
+
+
+@pytest.fixture
+def credentials_gemini_flash_exp() -> Credentials:
+    return get_llm_credentials(
+        "GEMINI_API_KEY", model="gemini-2.0-flash-exp", api_type="google", filter_dict={"tags": ["gemini-flash-exp"]}
     )
 
 
@@ -295,7 +316,7 @@ def credentials_gemini_pro() -> Credentials:
 def credentials_anthropic_claude_sonnet() -> Credentials:
     return get_llm_credentials(
         "ANTHROPIC_API_KEY",
-        model="claude-3-sonnet-20240229",
+        model="claude-3-5-sonnet-latest",
         api_type="anthropic",
         filter_dict={"tags": ["anthropic-claude-sonnet"]},
     )
@@ -308,6 +329,16 @@ def credentials_deepseek_reasoner() -> Credentials:
         model="deepseek-reasoner",
         api_type="deepseek",
         filter_dict={"tags": ["deepseek-reasoner"], "base_url": "https://api.deepseek.com/v1"},
+    )
+
+
+@pytest.fixture
+def credentials_deepseek_chat() -> Credentials:
+    return get_llm_credentials(
+        "DEEPSEEK_API_KEY",
+        model="deepseek-chat",
+        api_type="deepseek",
+        filter_dict={"tags": ["deepseek-chat"], "base_url": "https://api.deepseek.com/v1"},
     )
 
 
@@ -354,7 +385,7 @@ credentials_all_llms = [
         marks=pytest.mark.openai,
     ),
     pytest.param(
-        credentials_gemini_pro.__name__,
+        credentials_gemini_flash.__name__,
         marks=pytest.mark.gemini,
     ),
     pytest.param(
@@ -362,3 +393,112 @@ credentials_all_llms = [
         marks=pytest.mark.anthropic,
     ),
 ]
+
+credentials_browser_use = [
+    pytest.param(
+        credentials_gpt_4o_mini.__name__,
+        marks=pytest.mark.openai,
+    ),
+    pytest.param(
+        credentials_anthropic_claude_sonnet.__name__,
+        marks=pytest.mark.anthropic,
+    ),
+    pytest.param(
+        credentials_gemini_flash_exp.__name__,
+        marks=pytest.mark.gemini,
+    ),
+    # Deeseek currently does not work too well with the browser-use
+    pytest.param(
+        credentials_deepseek_chat.__name__,
+        marks=pytest.mark.deepseek,
+    ),
+]
+
+
+T = TypeVar("T", bound=Callable[..., Any])
+
+
+def suppress(
+    exception: type[BaseException],
+    *,
+    retries: int = 0,
+    timeout: int = 60,
+    error_filter: Optional[Callable[[BaseException], bool]] = None,
+) -> Callable[[T], T]:
+    """Suppresses the specified exception and retries the function a specified number of times.
+
+    Args:
+        exception (type[BaseException]): The exception to suppress.
+        retries (Optional[int]): The number of times to retry the function. If None, the function will tried once and just return in case of exception raised. Defaults to None.
+        timeout (int): The time to wait between retries in seconds. Defaults to 60.
+
+    """
+
+    def decorator(
+        func: T,
+        exception: type[BaseException] = exception,
+        retries: int = retries,
+        timeout: int = timeout,
+        error_filter: Optional[Callable[[BaseException], bool]] = error_filter,
+    ) -> T:
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def wrapper(
+                *args: Any,
+                exception: type[BaseException] = exception,
+                retries: int = retries,
+                timeout: int = timeout,
+                **kwargs: Any,
+            ) -> Any:
+                for i in range(retries + 1):
+                    try:
+                        return await func(*args, **kwargs)
+                    except exception as e:
+                        if error_filter and not error_filter(e):  # type: ignore [arg-type]
+                            raise
+                        if i >= retries - 1:
+                            pytest.xfail(f"Suppressed '{exception}' raised {i + 1} times")
+                            raise
+                        await asyncio.sleep(timeout)
+        else:
+
+            @functools.wraps(func)
+            def wrapper(
+                *args: Any,
+                exception: type[BaseException] = exception,
+                retries: int = retries,
+                timeout: int = timeout,
+                **kwargs: Any,
+            ) -> Any:
+                for i in range(retries + 1):
+                    try:
+                        return func(*args, **kwargs)
+                    except exception as e:
+                        if error_filter and not error_filter(e):  # type: ignore [arg-type]
+                            raise
+                        if i >= retries - 1:
+                            pytest.xfail(f"Suppressed '{exception}' raised {i + 1} times")
+                            raise
+                        time.sleep(timeout)
+
+        return wrapper  # type: ignore[return-value]
+
+    return decorator
+
+
+def suppress_gemini_resource_exhausted(func: T) -> T:
+    with optional_import_block():
+        from google.genai.errors import ClientError
+
+        # Catch only code 429 which is RESOURCE_EXHAUSTED error instead of catching all the client errors
+        def is_resource_exhausted_error(e: BaseException) -> bool:
+            return isinstance(e, ClientError) and getattr(e, "code", None) == 429
+
+        return suppress(ClientError, retries=2, error_filter=is_resource_exhausted_error)(func)
+
+    return func
+
+
+def suppress_json_decoder_error(func: T) -> T:
+    return suppress(JSONDecodeError)(func)

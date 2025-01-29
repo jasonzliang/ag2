@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -15,6 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from ...doc_utils import export_module
 from ...import_utils import optional_import_block, require_optional_import
 from ..base import CodeBlock, CodeExtractor, IPythonCodeResult
 from ..markdown_code_extractor import MarkdownCodeExtractor
@@ -29,6 +30,7 @@ __all__ = ["EmbeddedIPythonCodeExecutor"]
 
 @require_optional_import("jupyter_client", "jupyter-executor")
 @require_jupyter_kernel_gateway_installed()
+@export_module("autogen.coding.jupyter")
 class EmbeddedIPythonCodeExecutor(BaseModel):
     """(Experimental) A code executor class that executes code statefully using an embedded
     IPython kernel managed by this class.

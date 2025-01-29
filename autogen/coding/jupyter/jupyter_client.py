@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -13,6 +13,8 @@ import uuid
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Any, cast
+
+from ...doc_utils import export_module
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -31,6 +33,7 @@ with optional_import_block():
     from websocket import WebSocket
 
 
+@export_module("autogen.coding.jupyter")
 class JupyterClient:
     def __init__(self, connection_info: JupyterConnectionInfo):
         """(Experimental) A client for communicating with a Jupyter gateway server.

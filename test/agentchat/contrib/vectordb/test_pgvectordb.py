@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -22,8 +22,17 @@ with optional_import_block() as result:
 reason = "do not run on MacOS or windows OR dependency is not installed OR " + reason
 
 
+def is_postgres_accessible():
+    try:
+        conn = psycopg.connect("postgresql://postgres:postgres@localhost:5432/postgres")
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
 @pytest.mark.skipif(
-    sys.platform in ["darwin", "win32"],
+    sys.platform in ["darwin", "win32"] or not is_postgres_accessible(),
     reason=reason,
 )
 @skip_on_missing_imports(["pgvector", "psycopg", "sentence_transformers"], "retrievechat-pgvector")

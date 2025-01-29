@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -9,10 +9,12 @@ from __future__ import annotations
 from types import TracebackType
 from typing import Any
 
+from ..doc_utils import export_module
 from .abstract_cache_base import AbstractCache
 from .cache_factory import CacheFactory
 
 
+@export_module("autogen")
 class Cache(AbstractCache):
     """A wrapper class for managing cache configuration and instances.
 

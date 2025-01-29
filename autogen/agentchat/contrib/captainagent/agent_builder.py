@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - 2024, Owners of https://github.com/ag2ai
+# Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -17,6 +17,7 @@ from termcolor import colored
 
 from .... import AssistantAgent, ConversableAgent, OpenAIWrapper, UserProxyAgent, config_list_from_json
 from ....code_utils import CODE_BLOCK_PATTERN
+from ....doc_utils import export_module
 
 __all__ = ["AgentBuilder"]
 
@@ -47,6 +48,7 @@ def _retrieve_json(text):
     return code_blocks[0]
 
 
+@export_module("autogen.agentchat.contrib.captainagent")
 class AgentBuilder:
     """AgentBuilder can help user build an automatic task solving process powered by multi-agent system.
     Specifically, our building pipeline includes initialize and build.
