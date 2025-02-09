@@ -14,6 +14,20 @@
       "measurementId": "G-2GN2KN2CE4"
     }
   },
+  "redirects": [
+    {
+      "source": "/reference/:slug*",
+      "destination": "/docs/api-reference/:slug*"
+    },
+    {
+      "source": "/blog/:slug*",
+      "destination": "/docs/blog/:slug*"
+    },
+    {
+      "source": "/notebooks/:slug*",
+      "destination": "/docs/use-cases/notebooks/notebooks/:slug*"
+    }
+  ],
   "search": {
     "prompt": "Search or ask..."
   },
@@ -57,23 +71,19 @@
     },
     {
       "name": "Contribute",
-      "url": "contributor-guide"
+      "url": "docs/contributor-guide"
     },
     {
       "name": "FAQs",
-      "url": "faq"
+      "url": "docs/faq"
     },
     {
       "name": "Ecosystem",
-      "url": "ecosystem"
+      "url": "docs/ecosystem"
     },
     {
       "name": "Blog",
       "url": "docs/blog"
-    },
-    {
-      "name": "Community Talks",
-      "url": "docs/talks"
     }
   ],
   "anchors": [],
@@ -267,37 +277,37 @@
     {
       "group": "Contributor Guide",
       "pages": [
-        "contributor-guide/contributing",
-        "contributor-guide/setup-development-environment",
-        "contributor-guide/documentation",
-        "contributor-guide/file-bug-report",
-        "contributor-guide/maintainer",
-        "contributor-guide/pre-commit",
-        "contributor-guide/tests",
-        "contributor-guide/Research"
+        "docs/contributor-guide/contributing",
+        "docs/contributor-guide/setup-development-environment",
+        "docs/contributor-guide/documentation",
+        "docs/contributor-guide/file-bug-report",
+        "docs/contributor-guide/maintainer",
+        "docs/contributor-guide/pre-commit",
+        "docs/contributor-guide/tests",
+        "docs/contributor-guide/Research"
       ]
     },
     {
       "group": "FAQs",
       "pages": [
-        "faq/FAQ"
+        "docs/faq/FAQ"
       ]
     },
     {
       "group": "Ecosystem",
       "pages": [
-        "ecosystem/agentops",
-        "ecosystem/azure_cosmos_db",
-        "ecosystem/composio",
-        "ecosystem/databricks",
-        "ecosystem/llamaindex",
-        "ecosystem/mem0",
-        "ecosystem/memgpt",
-        "ecosystem/microsoft-fabric",
-        "ecosystem/ollama",
-        "ecosystem/pgvector",
-        "ecosystem/portkey",
-        "ecosystem/promptflow"
+        "docs/ecosystem/agentops",
+        "docs/ecosystem/azure_cosmos_db",
+        "docs/ecosystem/composio",
+        "docs/ecosystem/databricks",
+        "docs/ecosystem/llamaindex",
+        "docs/ecosystem/mem0",
+        "docs/ecosystem/memgpt",
+        "docs/ecosystem/microsoft-fabric",
+        "docs/ecosystem/ollama",
+        "docs/ecosystem/pgvector",
+        "docs/ecosystem/portkey",
+        "docs/ecosystem/promptflow"
       ]
     },
     {
@@ -308,6 +318,7 @@
           "pages": [
             "docs/api-reference/autogen/overview",
             "docs/api-reference/autogen/AFTER_WORK",
+            "docs/api-reference/autogen/AfterWork",
             "docs/api-reference/autogen/AfterWorkOption",
             "docs/api-reference/autogen/Agent",
             "docs/api-reference/autogen/AgentNameConflictError",
@@ -323,6 +334,7 @@
             "docs/api-reference/autogen/ModelClient",
             "docs/api-reference/autogen/NoEligibleSpeakerError",
             "docs/api-reference/autogen/ON_CONDITION",
+            "docs/api-reference/autogen/OnCondition",
             "docs/api-reference/autogen/OpenAIWrapper",
             "docs/api-reference/autogen/ReasoningAgent",
             "docs/api-reference/autogen/SenderRequiredError",
@@ -331,6 +343,7 @@
             "docs/api-reference/autogen/ThinkNode",
             "docs/api-reference/autogen/UPDATE_SYSTEM_MESSAGE",
             "docs/api-reference/autogen/UndefinedNextAgentError",
+            "docs/api-reference/autogen/UpdateSystemMessage",
             "docs/api-reference/autogen/UserProxyAgent",
             "docs/api-reference/autogen/a_initiate_swarm_chat",
             "docs/api-reference/autogen/config_list_from_dotenv",
@@ -344,10 +357,21 @@
             "docs/api-reference/autogen/initiate_chats",
             "docs/api-reference/autogen/initiate_swarm_chat",
             "docs/api-reference/autogen/register_function",
+            "docs/api-reference/autogen/register_hand_off",
             "docs/api-reference/autogen/visualize_tree",
             {
               "group": "agentchat",
               "pages": [
+                "docs/api-reference/autogen/agentchat/overview",
+                "docs/api-reference/autogen/agentchat/AFTER_WORK",
+                "docs/api-reference/autogen/agentchat/ContextStr",
+                "docs/api-reference/autogen/agentchat/ON_CONDITION",
+                "docs/api-reference/autogen/agentchat/SwarmAgent",
+                "docs/api-reference/autogen/agentchat/SwarmResult",
+                "docs/api-reference/autogen/agentchat/UPDATE_SYSTEM_MESSAGE",
+                "docs/api-reference/autogen/agentchat/UpdateSystemMessage",
+                "docs/api-reference/autogen/agentchat/a_initiate_chats",
+                "docs/api-reference/autogen/agentchat/register_hand_off",
                 {
                   "group": "chat",
                   "pages": [
@@ -946,7 +970,13 @@
                       "group": "swarm_agent",
                       "pages": [
                         "docs/api-reference/autogen/agentchat/contrib/swarm_agent/overview",
-                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/create_swarm_transition"
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/AFTER_WORK",
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/ContextStr",
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/ON_CONDITION",
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/SwarmAgent",
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/SwarmResult",
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/create_swarm_transition",
+                        "docs/api-reference/autogen/agentchat/contrib/swarm_agent/register_hand_off"
                       ]
                     },
                     {
@@ -1108,8 +1138,16 @@
             {
               "group": "agents",
               "pages": [
-                "docs/api-reference/autogen/agents/overview",
-                "docs/api-reference/autogen/agents/WebSurferAgent"
+                {
+                  "group": "experimental",
+                  "pages": [
+                    "docs/api-reference/autogen/agents/experimental/overview",
+                    "docs/api-reference/autogen/agents/experimental/DiscordAgent",
+                    "docs/api-reference/autogen/agents/experimental/SlackAgent",
+                    "docs/api-reference/autogen/agents/experimental/TelegramAgent",
+                    "docs/api-reference/autogen/agents/experimental/WebSurferAgent"
+                  ]
+                }
               ]
             },
             {
@@ -1266,6 +1304,13 @@
               "pages": [
                 "docs/api-reference/autogen/exception_utils/overview",
                 "docs/api-reference/autogen/exception_utils/ModelToolNotSupportedError"
+              ]
+            },
+            {
+              "group": "formatting_utils",
+              "pages": [
+                "docs/api-reference/autogen/formatting_utils/overview",
+                "docs/api-reference/autogen/formatting_utils/colored"
               ]
             },
             {
@@ -1603,6 +1648,12 @@
                     "docs/api-reference/autogen/tools/experimental/overview",
                     "docs/api-reference/autogen/tools/experimental/BrowserUseTool",
                     "docs/api-reference/autogen/tools/experimental/Crawl4AITool",
+                    "docs/api-reference/autogen/tools/experimental/DiscordRetrieveTool",
+                    "docs/api-reference/autogen/tools/experimental/DiscordSendTool",
+                    "docs/api-reference/autogen/tools/experimental/SlackRetrieveTool",
+                    "docs/api-reference/autogen/tools/experimental/SlackSendTool",
+                    "docs/api-reference/autogen/tools/experimental/TelegramRetrieveTool",
+                    "docs/api-reference/autogen/tools/experimental/TelegramSendTool",
                     {
                       "group": "browser_use",
                       "pages": [
@@ -1681,7 +1732,7 @@
     }
   ],
   "footerSocials": {
-    "x": "https://x.com/Chi_Wang_",
+    "x": "https://x.com/ag2oss",
     "github": "https://github.com/ag2ai/ag2",
     "linkedin": "https://www.linkedin.com/company/ag2ai",
     "discord": "https://discord.gg/pAbnFJrkgZ",
