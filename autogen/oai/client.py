@@ -965,8 +965,8 @@ class OpenAIWrapper:
 
             total_usage = None
             actual_usage = None
-
             cache_client = None
+
             if self.use_cache:
                 if cache is not None:
                     # Use the cache object if provided.
