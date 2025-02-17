@@ -1,6 +1,7 @@
 # Copyright (c) 2023 - 2025, AG2ai, Inc., AG2ai open-source projects maintainers and core contributors
 #
 # SPDX-License-Identifier: Apache-2.0
+import json
 from typing import Any, Optional, Union
 from unittest.mock import MagicMock, patch
 
@@ -57,6 +58,31 @@ def test_swarm_result():
     agent = ConversableAgent("test")
     result = SwarmResult(values="test", agent=agent)
     assert result.agent == agent
+
+
+def test_swarm_result_serialization():
+    agent = ConversableAgent(name="test_agent", human_input_mode="NEVER")
+    result = SwarmResult(
+        values="test",
+        agent=agent,
+        context_variables={"key": "value"},
+    )
+
+    serialized = json.loads(result.model_dump_json())
+    assert serialized["agent"] == "test_agent"
+    assert serialized["values"] == "test"
+    assert serialized["context_variables"] == {"key": "value"}
+
+    result = SwarmResult(
+        values="test",
+        agent="test_agent",
+        context_variables={"key": "value"},
+    )
+
+    serialized = json.loads(result.model_dump_json())
+    assert serialized["agent"] == "test_agent"
+    assert serialized["values"] == "test"
+    assert serialized["context_variables"] == {"key": "value"}
 
 
 def test_after_work_initialization():
@@ -510,7 +536,7 @@ def test_update_system_message():
     message_container = MessageContainer()
 
     # 1. Test with a callable function
-    def custom_update_function(agent: ConversableAgent, messages: list[dict]) -> str:
+    def custom_update_function(agent: ConversableAgent, messages: list[dict[str, Any]]) -> str:
         return f"System message with {agent.get_context('test_var')} and {len(messages)} messages"
 
     # 2. Test with a string template
@@ -561,7 +587,7 @@ def test_update_system_message():
     assert message_container.captured_sys_message == "Template message with test_value"
 
     # Test multiple update functions
-    def another_update_function(context_variables: dict[str, Any], messages: list[dict]) -> str:
+    def another_update_function(context_variables: dict[str, Any], messages: list[dict[str, Any]]) -> str:
         return "Another update"
 
     agent6 = ConversableAgent(
