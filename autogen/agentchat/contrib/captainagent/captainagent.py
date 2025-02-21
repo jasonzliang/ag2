@@ -274,7 +274,8 @@ Collect information from the general task, follow the suggestions from manager t
 {general_task}
 
 # Task and suggestions from manager
-{manager_task} """
+{manager_task}
+"""
 
     DEFAULT_AUTO_REPLY = "I'm a proxy and I can only execute your tool or end the conversation. If you think the problem is solved, please reply me only with 'TERMINATE'."
 
