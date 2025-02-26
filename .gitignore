@@ -195,4 +195,8 @@ notebook/coding
 .tags*
 =======
 chroma
+<<<<<<< HEAD
+>>>>>>> upstream/main
+=======
+notebook/reasoning_tree.json
 >>>>>>> upstream/main
