@@ -59,6 +59,12 @@ BedrockLLMConfigEntry(**data: Any)
     <br />
 
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>
+#### cache_seed
+<br />
+
+    <br />
+
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>
 #### k
 <br />
 
@@ -194,5 +200,21 @@ model_dump_json(
 | Type | Description |
 |--|--|
 | str | A JSON string representation of the model. |
+
+<br />
+
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>
+#### serialize_aws_secrets
+
+```python
+serialize_aws_secrets(self, v: SecretStr) -> str
+```
+
+    
+
+<b>Parameters:</b>
+| Name | Description |
+|--|--|
+| `v` | **Type:** SecretStr |
 
 <br />

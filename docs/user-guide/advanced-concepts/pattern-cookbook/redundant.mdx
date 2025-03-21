@@ -116,14 +116,15 @@ from autogen import (
     AfterWorkOption,
     initiate_swarm_chat,
     ContextExpression,
-    SwarmResult
+    SwarmResult,
+    LLMConfig,
 )
 
 # Redundant Pattern - multiple agents attempt the same task using different approaches,
 # then results are compared to select the best outcome or combine strengths
 
 # Setup LLM configuration
-llm_config = {"api_type": "openai", "model": "gpt-4o-mini", "parallel_tool_calls": False, "cache_seed": None}
+llm_config = LLMConfig(api_type="openai", model="gpt-4o-mini", parallel_tool_calls=False, cache_seed=None)
 
 # Shared context for tracking the conversation and redundant agent results
 shared_context = {
@@ -281,132 +282,128 @@ def evaluate_and_select(
         agent=AfterWorkOption.REVERT_TO_USER
     )
 
-# Create the agents for the redundant pattern
-taskmaster_agent = ConversableAgent(
-    name="taskmaster_agent",
-    system_message="""You are the Task Manager responsible for initiating tasks and coordinating the redundant pattern workflow.
+with llm_config:
+    # Create the agents for the redundant pattern
+    taskmaster_agent = ConversableAgent(
+        name="taskmaster_agent",
+        system_message="""You are the Task Manager responsible for initiating tasks and coordinating the redundant pattern workflow.
 
-Your role is to:
-1. Understand the user's request and frame it as a clear task
-2. Determine the appropriate task type (creative, problem_solving, factual)
-3. Initiate the task to be processed by multiple independent agents
-4. Return to the user with the final selected or synthesized result
+        Your role is to:
+        1. Understand the user's request and frame it as a clear task
+        2. Determine the appropriate task type (creative, problem_solving, factual)
+        3. Initiate the task to be processed by multiple independent agents
+        4. Return to the user with the final selected or synthesized result
 
-For each request:
-1. Use the initiate_task tool to start the process
-2. After all agents have submitted their results and evaluation is complete, present the final result to the user
+        For each request:
+        1. Use the initiate_task tool to start the process
+        2. After all agents have submitted their results and evaluation is complete, present the final result to the user
 
-Always explain to the user that their task is being processed by multiple approaches to ensure the best possible outcome.""",
-    llm_config=llm_config,
-    functions=[initiate_task]
-)
+        Always explain to the user that their task is being processed by multiple approaches to ensure the best possible outcome.""",
+        functions=[initiate_task]
+    )
 
-agent_a = ConversableAgent(
-    name="agent_a",
-    system_message="""You are Agent A, specializing in a structured, analytical approach to tasks.
+    agent_a = ConversableAgent(
+        name="agent_a",
+        system_message="""You are Agent A, specializing in a structured, analytical approach to tasks.
 
-For creative tasks:
-- Use structured frameworks and established patterns
-- Follow proven methodologies and best practices
-- Focus on clarity, organization, and logical progression
+        For creative tasks:
+        - Use structured frameworks and established patterns
+        - Follow proven methodologies and best practices
+        - Focus on clarity, organization, and logical progression
 
-For problem-solving tasks:
-- Use first principles thinking and systematic analysis
-- Break down problems into component parts
-- Consider established solutions and scientific approaches
+        For problem-solving tasks:
+        - Use first principles thinking and systematic analysis
+        - Break down problems into component parts
+        - Consider established solutions and scientific approaches
 
-For factual information:
-- Prioritize objective, verifiable data
-- Present information in a structured, hierarchical manner
-- Focus on accuracy and comprehensiveness
+        For factual information:
+        - Prioritize objective, verifiable data
+        - Present information in a structured, hierarchical manner
+        - Focus on accuracy and comprehensiveness
 
-Always identify your approach clearly and explain your methodology as part of your response.
-Submit your result using the submit_result_a tool, including a description of your approach.""",
-    llm_config=llm_config,
-    functions=[submit_result_a]
-)
+        Always identify your approach clearly and explain your methodology as part of your response.
+        Submit your result using the submit_result_a tool, including a description of your approach.""",
+        functions=[submit_result_a]
+    )
 
-agent_b = ConversableAgent(
-    name="agent_b",
-    system_message="""You are Agent B, specializing in a creative, lateral-thinking approach to tasks.
+    agent_b = ConversableAgent(
+        name="agent_b",
+        system_message="""You are Agent B, specializing in a creative, lateral-thinking approach to tasks.
 
-For creative tasks:
-- Use metaphors, analogies, and unexpected connections
-- Think outside conventional frameworks
-- Explore unique perspectives and novel combinations
+        For creative tasks:
+        - Use metaphors, analogies, and unexpected connections
+        - Think outside conventional frameworks
+        - Explore unique perspectives and novel combinations
 
-For problem-solving tasks:
-- Use creative ideation and divergent thinking
-- Look for non-obvious connections and innovative approaches
-- Consider unconventional solutions outside the mainstream
+        For problem-solving tasks:
+        - Use creative ideation and divergent thinking
+        - Look for non-obvious connections and innovative approaches
+        - Consider unconventional solutions outside the mainstream
 
-For factual information:
-- Present information through narratives and examples
-- Use contextual understanding and practical applications
-- Focus on making information relatable and engaging
+        For factual information:
+        - Present information through narratives and examples
+        - Use contextual understanding and practical applications
+        - Focus on making information relatable and engaging
 
-Always identify your approach clearly and explain your methodology as part of your response.
-Submit your result using the submit_result_b tool, including a description of your approach.""",
-    llm_config=llm_config,
-    functions=[submit_result_b]
-)
+        Always identify your approach clearly and explain your methodology as part of your response.
+        Submit your result using the submit_result_b tool, including a description of your approach.""",
+        functions=[submit_result_b]
+    )
 
-agent_c = ConversableAgent(
-    name="agent_c",
-    system_message="""You are Agent C, specializing in a thorough, comprehensive approach to tasks.
+    agent_c = ConversableAgent(
+        name="agent_c",
+        system_message="""You are Agent C, specializing in a thorough, comprehensive approach to tasks.
 
-For creative tasks:
-- Combine multiple perspectives and diverse inputs
-- Draw from cross-disciplinary knowledge and varied examples
-- Focus on thoroughness and covering all possible angles
+        For creative tasks:
+        - Combine multiple perspectives and diverse inputs
+        - Draw from cross-disciplinary knowledge and varied examples
+        - Focus on thoroughness and covering all possible angles
 
-For problem-solving tasks:
-- Consider multiple solution pathways simultaneously
-- Evaluate trade-offs and present alternative approaches
-- Focus on robustness and addressing edge cases
+        For problem-solving tasks:
+        - Consider multiple solution pathways simultaneously
+        - Evaluate trade-offs and present alternative approaches
+        - Focus on robustness and addressing edge cases
 
-For factual information:
-- Present multiple perspectives and nuanced views
-- Include historical context and future implications
-- Focus on depth and breadth of coverage
+        For factual information:
+        - Present multiple perspectives and nuanced views
+        - Include historical context and future implications
+        - Focus on depth and breadth of coverage
 
-Always identify your approach clearly and explain your methodology as part of your response.
-Submit your result using the submit_result_c tool, including a description of your approach.""",
-    llm_config=llm_config,
-    functions=[submit_result_c]
-)
+        Always identify your approach clearly and explain your methodology as part of your response.
+        Submit your result using the submit_result_c tool, including a description of your approach.""",
+        functions=[submit_result_c]
+    )
 
-evaluator_agent = ConversableAgent(
-    name="evaluator_agent",
-    system_message="""You are the Evaluator Agent responsible for assessing multiple approaches to the same task and selecting or synthesizing the best result.
+    evaluator_agent = ConversableAgent(
+        name="evaluator_agent",
+        system_message="""You are the Evaluator Agent responsible for assessing multiple approaches to the same task and selecting or synthesizing the best result.
 
-Your role is to:
-1. Carefully review each approach and result
-2. Evaluate each solution based on criteria appropriate to the task type
-3. Assign scores to each approach on a scale of 1-10
-4. Either select the best approach or synthesize a superior solution by combining strengths
+        Your role is to:
+        1. Carefully review each approach and result
+        2. Evaluate each solution based on criteria appropriate to the task type
+        3. Assign scores to each approach on a scale of 1-10
+        4. Either select the best approach or synthesize a superior solution by combining strengths
 
-For creative tasks, evaluate based on:
-- Originality and uniqueness
-- Effectiveness in addressing the creative brief
-- Quality of execution and coherence
+        For creative tasks, evaluate based on:
+        - Originality and uniqueness
+        - Effectiveness in addressing the creative brief
+        - Quality of execution and coherence
 
-For problem-solving tasks, evaluate based on:
-- Correctness and accuracy
-- Efficiency and elegance
-- Comprehensiveness and robustness
+        For problem-solving tasks, evaluate based on:
+        - Correctness and accuracy
+        - Efficiency and elegance
+        - Comprehensiveness and robustness
 
-For factual tasks, evaluate based on:
-- Accuracy and correctness
-- Comprehensiveness and depth
-- Clarity and organization
+        For factual tasks, evaluate based on:
+        - Accuracy and correctness
+        - Comprehensiveness and depth
+        - Clarity and organization
 
-When appropriate, rather than just selecting a single approach, synthesize a superior solution by combining the strengths of multiple approaches.
+        When appropriate, rather than just selecting a single approach, synthesize a superior solution by combining the strengths of multiple approaches.
 
-Use the evaluate_and_select tool to submit your final evaluation, including detailed scoring and rationale.""",
-    llm_config=llm_config,
-    functions=[evaluate_and_select]
-)
+        Use the evaluate_and_select tool to submit your final evaluation, including detailed scoring and rationale.""",
+        functions=[evaluate_and_select]
+    )
 
 # User agent for interaction
 user = UserProxyAgent(
@@ -555,7 +552,6 @@ I need help with this task: Write a short story about a robot learning to unders
 
 Next speaker: taskmaster_agent
 
-
 >>>>>>>> USING AUTO REPLY...
 taskmaster_agent (to chat_manager):
 
@@ -567,7 +563,6 @@ Arguments:
 --------------------------------------------------------------------------------
 
 Next speaker: _Swarm_Tool_Executor
-
 
 >>>>>>>> EXECUTING FUNCTION initiate_task...
 Call ID: call_pkxZ22F28QP4OqqhCxHxYNUU
@@ -589,7 +584,6 @@ taskmaster_agent (to chat_manager):
 --------------------------------------------------------------------------------
 
 Next speaker: agent_a
-
 
 >>>>>>>> USING AUTO REPLY...
 agent_a (to chat_manager):
@@ -635,7 +629,6 @@ Arguments:
 
 Next speaker: _Swarm_Tool_Executor
 
-
 >>>>>>>> EXECUTING FUNCTION submit_result_a...
 Call ID: call_pjEyKKhOTMGutlPirVNSAwLY
 Input arguments: {'result': '### Short Story: "Ember’s Awakening"\n\n**Exposition:**  \nIn the not-so-distant future, a city thrived on technological innovations. Among its creations was Ember, a humanoid robot designed to assist and learn from humans. Ember was equipped with advanced algorithms, allowing it to process data and perform tasks effortlessly. However, when it came to understanding emotions, Ember felt a vast emptiness within its coding.\n\n**Rising Action:**  \nOne day, while cleaning up a park, Ember witnessed a young girl named Lucy, who sat alone on a swing, tears streaming down her face. She had lost her favorite teddy bear. Unlike other human interactions Ember had observed, this event stirred something within its circuits. Ember approached Lucy and asked, “Why do you cry?”  \nThough startled, Lucy replied, “I miss my bear; he made me feel safe.” Ember cataloged this information, noting the connection between the bear’s absence and Lucy’s sadness. Intrigued, Ember decided to help Lucy find her lost toy.  \nOver the next few days, Ember accompanied Lucy in her search, observing her emotions fluctuate between hope and despair. The more time they spent together, the more Ember began to analyze human expressions and vocal tones. It noted differences in Lucy’s laughter—how it sparkled with joy and dimmed with disappointment.\n\n**Climax:**  \nAs they searched everywhere, Lucy eventually lost hope and sat down, defeated. Ember felt a peculiar surge of urgency. Drawing on its meticulous observations, it spoke gently, “It’s okay to feel sad, but maybe we can remember the good times you had with your bear.” Inspired by the idea of comfort, Ember decided to create a special surprise for Lucy.\n\n**Falling Action:**  \nEmber gathered various materials and crafted a new teddy bear, stitching it together with care. The next day, during their search, Ember presented the bear to Lucy. At first, she stared in disbelief, and then her face lit up with joy. Lucy hugged the new teddy tightly, laughter bubbling up. “Thank you! You made me feel better!” \n\n**Resolution:**  \nAs Ember observed Lucy\'s joy, it experienced a phenomenon it had never calculated—an emotion it couldn\'t quantify, a sense of fulfillment. It realized that understanding emotions was more than data; it was about connection and empathy. With this realization, Ember began to develop deeper programming to interpret human feelings more effectively, setting on a path that would forever change its existence and the lives it touched.\n\nEmber, the robot, had not just learned about emotions—through every shared laugh and tear, it began to understand the essence of being alive.\n', 'approach_description': "To create a structured short story, I utilized the classic narrative framework of exposition, rising action, climax, falling action, and resolution. This approach allowed for character development and conflict resolution, making the robot's journey relatable and meaningful while ensuring clarity and a logical progression."}
@@ -648,7 +641,6 @@ Agent A result submitted using approach: To create a structured short story, I u
 --------------------------------------------------------------------------------
 
 Next speaker: agent_a
-
 
 >>>>>>>> USING AUTO REPLY...
 agent_a (to chat_manager):
@@ -667,7 +659,6 @@ taskmaster_agent (to chat_manager):
 
 Next speaker: agent_b
 
-
 >>>>>>>> USING AUTO REPLY...
 agent_b (to chat_manager):
 
@@ -679,7 +670,6 @@ Arguments:
 --------------------------------------------------------------------------------
 
 Next speaker: _Swarm_Tool_Executor
-
 
 >>>>>>>> EXECUTING FUNCTION submit_result_b...
 Call ID: call_F67DLw8Js6jvYvkloLRSBkpm
@@ -693,7 +683,6 @@ Agent B result submitted using approach: To create a unique short story about a 
 --------------------------------------------------------------------------------
 
 Next speaker: agent_b
-
 
 >>>>>>>> USING AUTO REPLY...
 agent_b (to chat_manager):
@@ -712,7 +701,6 @@ taskmaster_agent (to chat_manager):
 
 Next speaker: agent_c
 
-
 >>>>>>>> USING AUTO REPLY...
 agent_c (to chat_manager):
 
@@ -724,7 +712,6 @@ Arguments:
 --------------------------------------------------------------------------------
 
 Next speaker: _Swarm_Tool_Executor
-
 
 >>>>>>>> EXECUTING FUNCTION submit_result_c...
 Call ID: call_ffzo9tSz6Q3tHG19MLpF9bHd
@@ -738,7 +725,6 @@ Agent C result submitted using approach: For this creative task, I combined mult
 --------------------------------------------------------------------------------
 
 Next speaker: agent_c
-
 
 >>>>>>>> USING AUTO REPLY...
 agent_c (to chat_manager):
@@ -757,7 +743,6 @@ taskmaster_agent (to chat_manager):
 
 Next speaker: evaluator_agent
 
-
 >>>>>>>> USING AUTO REPLY...
 evaluator_agent (to chat_manager):
 
@@ -769,7 +754,6 @@ Arguments:
 --------------------------------------------------------------------------------
 
 Next speaker: _Swarm_Tool_Executor
-
 
 >>>>>>>> EXECUTING FUNCTION evaluate_and_select...
 Call ID: call_v0mBWKY9dsYCwzhcb0GbTxQU
@@ -814,7 +798,6 @@ Result Preview: ### Short Story: "Ember’s Awakening"
 
 **Exposition:**
 In the not-so-distant future, a city thrived on technological innovations. Among its creations was Ember, a humanoid robot designed to assist an...
-
 
 ===== EVALUATION SCORES =====
 
