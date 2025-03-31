@@ -188,21 +188,11 @@ local_cache
 
 
 notebook/result.png
-
 notebook/coding
-
-<<<<<<< HEAD
-.tags*
-=======
-chroma
-<<<<<<< HEAD
->>>>>>> upstream/main
-=======
 notebook/reasoning_tree.json
-<<<<<<< HEAD
->>>>>>> upstream/main
-=======
+chroma
+
 client_secret*.json
 *token*.json
 *credentials.json
->>>>>>> upstream/main
+.tags*
