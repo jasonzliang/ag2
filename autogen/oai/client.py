@@ -242,6 +242,7 @@ class OpenAILLMConfigEntry(LLMConfigEntry):
     api_type: Literal["openai"] = "openai"
     top_p: Optional[float] = None
     price: Optional[list[float]] = Field(default=None, min_length=2, max_length=2)
+    tool_choice: Optional[Literal["none", "auto", "required"]] = None
 
     def create_client(self) -> "ModelClient":
         raise NotImplementedError("create_client method must be implemented in the derived class.")
@@ -252,6 +253,7 @@ class AzureOpenAILLMConfigEntry(LLMConfigEntry):
     api_type: Literal["azure"] = "azure"
     top_p: Optional[float] = None
     azure_ad_token_provider: Optional[Union[str, Callable[[], str]]] = None
+    tool_choice: Optional[Literal["none", "auto", "required"]] = None
 
     def create_client(self) -> "ModelClient":
         raise NotImplementedError
@@ -264,6 +266,7 @@ class DeepSeekLLMConfigEntry(LLMConfigEntry):
     temperature: float = Field(0.5, ge=0.0, le=1.0)
     max_tokens: int = Field(8192, ge=1, le=8192)
     top_p: Optional[float] = Field(None, ge=0.0, le=1.0)
+    tool_choice: Optional[Literal["none", "auto", "required"]] = None
 
     @field_validator("top_p", mode="before")
     @classmethod
@@ -756,7 +759,7 @@ class OpenAIWrapper:
 
         Args:
             config_list: a list of config dicts to override the base_config.
-                They can contain additional kwargs as allowed in the [create](/docs/api-reference/autogen/OpenAIWrapper#autogen.OpenAIWrapper.create) method. E.g.,
+                They can contain additional kwargs as allowed in the [create](https://ag2.airt.ai/latest/docs/api-reference/autogen/OpenAIWrapper/#autogen.OpenAIWrapper.create) method. E.g.,
 
                 ```python
                     config_list = [

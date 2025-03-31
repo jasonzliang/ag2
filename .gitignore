@@ -199,4 +199,10 @@ chroma
 >>>>>>> upstream/main
 =======
 notebook/reasoning_tree.json
+<<<<<<< HEAD
+>>>>>>> upstream/main
+=======
+client_secret*.json
+*token*.json
+*credentials.json
 >>>>>>> upstream/main
