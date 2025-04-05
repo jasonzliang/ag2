@@ -1536,12 +1536,7 @@ class ConversableAgent(LLMAgent):
                         self.send(tool_reply[1], recipient, silent=silent)
 
             else:  # No breaks in the for loop, so we have reached max turns
-<<<<<<< HEAD
-                iostream.send(TerminationMessage(termination_reason=f"Maximum turns ({max_turns}) reached"))
-
-=======
                 iostream.send(TerminationEvent(termination_reason=f"Maximum turns ({max_turns}) reached"))
->>>>>>> upstream/main
         else:
             self._prepare_chat(recipient, clear_history)
             if isinstance(message, Callable):
