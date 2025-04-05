@@ -195,4 +195,8 @@ chroma
 client_secret*.json
 *token*.json
 *credentials.json
+<<<<<<< HEAD
 .tags*
+=======
+notebook/math_server.py
+>>>>>>> upstream/main
