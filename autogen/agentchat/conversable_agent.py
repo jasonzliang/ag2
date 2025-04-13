@@ -53,6 +53,7 @@ from ..events.agent_events import (
     ExecutedFunctionEvent,
     GenerateCodeExecutionReplyEvent,
     PostCarryoverProcessingEvent,
+    RunCompletionEvent,
     TerminationAndHumanReplyNoInputEvent,
     TerminationEvent,
     UsingAutoReplyEvent,
@@ -1596,26 +1597,34 @@ class ConversableAgent(LLMAgent):
                         agent_human_input_mode="ALWAYS" if user_input else "NEVER",
                     ) as executor,
                 ):
-                    if msg_to == "agent":
-                        chat_result = executor.initiate_chat(
-                            self,
-                            message=message,
-                            clear_history=clear_history,
-                            max_turns=max_turns,
-                            summary_method=summary_method,
-                        )
-                    else:
-                        chat_result = self.initiate_chat(
-                            executor,
-                            message=message,
-                            clear_history=clear_history,
-                            max_turns=max_turns,
-                            summary_method=summary_method,
-                        )
+                    try:
+                        if msg_to == "agent":
+                            chat_result = executor.initiate_chat(
+                                self,
+                                message=message,
+                                clear_history=clear_history,
+                                max_turns=max_turns,
+                                summary_method=summary_method,
+                            )
+                        else:
+                            chat_result = self.initiate_chat(
+                                executor,
+                                message=message,
+                                clear_history=clear_history,
+                                max_turns=max_turns,
+                                summary_method=summary_method,
+                            )
 
-                    response._summary = chat_result.summary
-                    response._messages = chat_result.chat_history
-                    response._last_speaker = self
+                        IOStream.get_default().send(
+                            RunCompletionEvent(
+                                history=chat_result.chat_history,
+                                summary=chat_result.summary,
+                                cost=chat_result.cost,
+                                last_speaker=self.name,
+                            )
+                        )
+                    except Exception as e:
+                        response.iostream.send(ErrorEvent(error=e))
 
         else:
 
@@ -1640,12 +1649,19 @@ class ConversableAgent(LLMAgent):
 
                         response._summary = chat_result.summary
                         response._messages = chat_result.chat_history
+
+                        _last_speaker = recipient if chat_result.chat_history[-1]["name"] == recipient.name else self
                         if hasattr(recipient, "last_speaker"):
-                            response._last_speaker = recipient.last_speaker
-                        else:
-                            response._last_speaker = (
-                                recipient if chat_result.chat_history[-1]["name"] == recipient.name else self
+                            _last_speaker = recipient.last_speaker
+
+                        IOStream.get_default().send(
+                            RunCompletionEvent(
+                                history=chat_result.chat_history,
+                                summary=chat_result.summary,
+                                cost=chat_result.cost,
+                                last_speaker=_last_speaker.name,
                             )
+                        )
                     except Exception as e:
                         response.iostream.send(ErrorEvent(error=e))
 
@@ -1749,7 +1765,7 @@ class ConversableAgent(LLMAgent):
             async def initiate_chat(
                 self=self,
                 iostream: AsyncThreadIOStream = iostream,
-                response: AsyncRunResponseProtocol = response,
+                response: AsyncRunResponse = response,
             ) -> None:
                 with (
                     IOStream.set_default(iostream),
@@ -1760,33 +1776,41 @@ class ConversableAgent(LLMAgent):
                         agent_human_input_mode="ALWAYS" if user_input else "NEVER",
                     ) as executor,
                 ):
-                    if msg_to == "agent":
-                        chat_result = await executor.a_initiate_chat(
-                            self,
-                            message=message,
-                            clear_history=clear_history,
-                            max_turns=max_turns,
-                            summary_method=summary_method,
-                        )
-                    else:
-                        chat_result = await self.a_initiate_chat(
-                            executor,
-                            message=message,
-                            clear_history=clear_history,
-                            max_turns=max_turns,
-                            summary_method=summary_method,
-                        )
+                    try:
+                        if msg_to == "agent":
+                            chat_result = await executor.a_initiate_chat(
+                                self,
+                                message=message,
+                                clear_history=clear_history,
+                                max_turns=max_turns,
+                                summary_method=summary_method,
+                            )
+                        else:
+                            chat_result = await self.a_initiate_chat(
+                                executor,
+                                message=message,
+                                clear_history=clear_history,
+                                max_turns=max_turns,
+                                summary_method=summary_method,
+                            )
 
-                    response._summary = chat_result.summary
-                    response._messages = chat_result.chat_history
-                    response._last_speaker = self
+                        IOStream.get_default().send(
+                            RunCompletionEvent(
+                                history=chat_result.chat_history,
+                                summary=chat_result.summary,
+                                cost=chat_result.cost,
+                                last_speaker=self.name,
+                            )
+                        )
+                    except Exception as e:
+                        response.iostream.send(ErrorEvent(error=e))
 
         else:
 
             async def initiate_chat(
                 self=self,
                 iostream: AsyncThreadIOStream = iostream,
-                response: AsyncRunResponseProtocol = response,
+                response: AsyncRunResponse = response,
             ) -> None:
                 with IOStream.set_default(iostream):  # type: ignore[arg-type]
                     try:
@@ -1802,17 +1826,19 @@ class ConversableAgent(LLMAgent):
                             **kwargs,
                         )
 
-                        response._summary = chat_result.summary
-                        response._messages = chat_result.chat_history
+                        last_speaker = recipient if chat_result.chat_history[-1]["name"] == recipient.name else self
                         if hasattr(recipient, "last_speaker"):
-                            print("!" * 100)
-                            print(recipient.last_speaker)
-                            response._last_speaker = recipient.last_speaker
-                        else:
-                            print("!" * 100)
-                            response._last_speaker = (
-                                recipient if chat_result.chat_history[-1]["name"] == recipient.name else self
+                            last_speaker = recipient.last_speaker
+
+                        IOStream.get_default().send(
+                            RunCompletionEvent(
+                                history=chat_result.chat_history,
+                                summary=chat_result.summary,
+                                cost=chat_result.cost,
+                                last_speaker=last_speaker.name,
                             )
+                        )
+
                     except Exception as e:
                         response.iostream.send(ErrorEvent(error=e))
 
@@ -2023,9 +2049,15 @@ class ConversableAgent(LLMAgent):
                         sender = chat_info["sender"]
                         chat_res = sender.initiate_chat(**chat_info)
 
-                        response._summary = chat_res.summary
-                        response._messages = chat_res.chat_history
-                        response._last_speaker = self if chat_res.chat_history[-1]["name"] == self.name else sender
+                        IOStream.get_default().send(
+                            RunCompletionEvent(
+                                history=chat_res.chat_history,
+                                summary=chat_res.summary,
+                                cost=chat_res.cost,
+                                last_speaker=(self if chat_res.chat_history[-1]["name"] == self.name else sender).name,
+                            )
+                        )
+
                         finished_chats.append(chat_res)
             except Exception as e:
                 response.iostream.send(ErrorEvent(error=e))
@@ -2086,9 +2118,15 @@ class ConversableAgent(LLMAgent):
                         sender = chat_info["sender"]
                         chat_res = await sender.a_initiate_chat(**chat_info)
 
-                        response._summary = chat_res.summary
-                        response._messages = chat_res.chat_history
-                        response._last_speaker = self if chat_res.chat_history[-1]["name"] == self.name else sender
+                        IOStream.get_default().send(
+                            RunCompletionEvent(
+                                history=chat_res.chat_history,
+                                summary=chat_res.summary,
+                                cost=chat_res.cost,
+                                last_speaker=(self if chat_res.chat_history[-1]["name"] == self.name else sender).name,
+                            )
+                        )
+
                         finished_chats.append(chat_res)
 
             except Exception as e:
