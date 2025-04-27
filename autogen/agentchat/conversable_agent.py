@@ -165,11 +165,8 @@ class ConversableAgent(LLMAgent):
         update_agent_state_before_reply: Optional[
             Union[list[Union[Callable, UpdateSystemMessage]], Callable, UpdateSystemMessage]
         ] = None,
-<<<<<<< HEAD
-        role_for_system_message: Literal["system", "user"] = "system"
-=======
+        role_for_system_message: Literal["system", "user"] = "system",
         handoffs: Optional[Handoffs] = None,
->>>>>>> upstream/main
     ):
         """
         Args:
