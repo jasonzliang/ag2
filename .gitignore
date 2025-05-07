@@ -197,10 +197,8 @@ client_secret*.json
 *credentials.json
 notebook/*_server.py
 
-<<<<<<< HEAD
-.tags*
-=======
-
 notebook/mcp/wikipedia_articles
 notebook/mcp/arxiv_papers
->>>>>>> upstream/main
+
+.DS_store
+.tags*
