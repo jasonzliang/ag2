@@ -3157,12 +3157,16 @@ class ConversableAgent(LLMAgent):
             arguments = {}
             content = f"Error: Function {func_name} not found."
 
-        if verbose:
-            iostream.send(
-                ExecutedFunctionEvent(
-                    func_name=func_name, call_id=call_id, arguments=arguments, content=content, recipient=self
-                )
+        iostream.send(
+            ExecutedFunctionEvent(
+                func_name=func_name,
+                call_id=call_id,
+                arguments=arguments,
+                content=content,
+                recipient=self,
+                is_exec_success=is_exec_success,
             )
+        )
 
         return is_exec_success, {
             "name": func_name,
@@ -3225,12 +3229,16 @@ class ConversableAgent(LLMAgent):
             arguments = {}
             content = f"Error: Function {func_name} not found."
 
-        if verbose:
-            iostream.send(
-                ExecutedFunctionEvent(
-                    func_name=func_name, call_id=call_id, arguments=arguments, content=content, recipient=self
-                )
+        iostream.send(
+            ExecutedFunctionEvent(
+                func_name=func_name,
+                call_id=call_id,
+                arguments=arguments,
+                content=content,
+                recipient=self,
+                is_exec_success=is_exec_success,
             )
+        )
 
         return is_exec_success, {
             "name": func_name,
