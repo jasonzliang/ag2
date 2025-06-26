@@ -77,13 +77,13 @@ from .chat import (
     initiate_chats,
 )
 from .group.context_variables import ContextVariables
+from .group.guardrails import Guardrail
 from .group.handoffs import Handoffs
 from .utils import consolidate_chat_info, gather_usage_summary
 
 if TYPE_CHECKING:
     from .group.on_condition import OnCondition
     from .group.on_context_condition import OnContextCondition
-
 __all__ = ("ConversableAgent",)
 
 logger = logging.getLogger(__name__)
@@ -225,6 +225,8 @@ class ConversableAgent(LLMAgent):
             handoffs (Handoffs): Handoffs object containing all handoff transition conditions.
         """
         self.handoffs = handoffs if handoffs is not None else Handoffs()
+        self.input_guardrails: list["Guardrail"] = []
+        self.output_guardrails: list["Guardrail"] = []
 
         # we change code_execution_config below and we have to make sure we don't change the input
         # in case of UserProxyAgent, without this we could even change the default value {}
@@ -1497,7 +1499,11 @@ class ConversableAgent(LLMAgent):
                         self.send(tool_reply[1], recipient, silent=silent)
 
             else:  # No breaks in the for loop, so we have reached max turns
-                iostream.send(TerminationEvent(termination_reason=f"Maximum turns ({max_turns}) reached"))
+                iostream.send(
+                    TerminationEvent(
+                        termination_reason=f"Maximum turns ({max_turns}) reached", sender=self, recipient=recipient
+                    )
+                )
         else:
             self._prepare_chat(recipient, clear_history)
             if isinstance(message, Callable):
@@ -1677,7 +1683,11 @@ class ConversableAgent(LLMAgent):
                     break
                 await self.a_send(msg2send, recipient, request_reply=True, silent=silent)
             else:  # No breaks in the for loop, so we have reached max turns
-                iostream.send(TerminationEvent(termination_reason=f"Maximum turns ({max_turns}) reached"))
+                iostream.send(
+                    TerminationEvent(
+                        termination_reason=f"Maximum turns ({max_turns}) reached", sender=self, recipient=recipient
+                    )
+                )
         else:
             self._prepare_chat(recipient, clear_history)
             if isinstance(message, Callable):
@@ -2614,7 +2624,7 @@ class ConversableAgent(LLMAgent):
             self._consecutive_auto_reply_counter[sender] = 0
 
             if termination_reason:
-                iostream.send(TerminationEvent(termination_reason=termination_reason))
+                iostream.send(TerminationEvent(termination_reason=termination_reason, sender=self, recipient=sender))
 
             return True, None
 
@@ -2754,7 +2764,7 @@ class ConversableAgent(LLMAgent):
             self._consecutive_auto_reply_counter[sender] = 0
 
             if termination_reason:
-                iostream.send(TerminationEvent(termination_reason=termination_reason))
+                iostream.send(TerminationEvent(termination_reason=termination_reason, sender=self, recipient=sender))
 
             return True, None
 
@@ -4020,6 +4030,42 @@ class ConversableAgent(LLMAgent):
             conditions: List of conditions to add
         """
         self.handoffs.add_many(conditions)
+
+    def register_input_guardrail(self, guardrail: "Guardrail") -> None:
+        """
+        Register a guardrail to be used for input validation.
+
+        Args:
+            guardrail: The guardrail to register.
+        """
+        self.input_guardrails.append(guardrail)
+
+    def register_input_guardrails(self, guardrails: list["Guardrail"]) -> None:
+        """
+        Register multiple guardrails to be used for input validation.
+
+        Args:
+            guardrails: List of guardrails to register.
+        """
+        self.input_guardrails.extend(guardrails)
+
+    def register_output_guardrail(self, guardrail: "Guardrail") -> None:
+        """
+        Register a guardrail to be used for output validation.
+
+        Args:
+            guardrail: The guardrail to register.
+        """
+        self.output_guardrails.append(guardrail)
+
+    def register_output_guardrails(self, guardrails: list["Guardrail"]) -> None:
+        """
+        Register multiple guardrails to be used for output validation.
+
+        Args:
+            guardrails: List of guardrails to register.
+        """
+        self.output_guardrails.extend(guardrails)
 
 
 @export_module("autogen")
