@@ -200,5 +200,7 @@ notebook/*_server.py
 notebook/mcp/wikipedia_articles
 notebook/mcp/arxiv_papers
 
+*CLAUDE.md
+
 .DS_store
 .tags*
