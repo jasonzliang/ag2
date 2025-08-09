@@ -1865,6 +1865,8 @@ class ConversableAgent(LLMAgent):
             raise ValueError(
                 "If not None, the summary_method must be a string from [`reflection_with_llm`, `last_msg`] or a callable."
             )
+        if isinstance(summary, dict):
+            summary = str(summary.get("content", ""))
         return summary
 
     @staticmethod

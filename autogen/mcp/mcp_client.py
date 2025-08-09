@@ -4,30 +4,157 @@
 
 
 import sys
-from datetime import datetime
+from contextlib import AsyncExitStack, asynccontextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Annotated, Any, Optional, Union
+from typing import (
+    Annotated,
+    Any,
+    AsyncContextManager,
+    AsyncIterator,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    Union,
+    cast,
+)
 
 import anyio
-from pydantic import BaseModel
+from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+from mcp.client.session import ClientSession
+from mcp.client.sse import sse_client
+from mcp.client.stdio import StdioServerParameters, stdio_client
+from pydantic import AnyUrl, BaseModel, Field
 
 from ..doc_utils import export_module
 from ..import_utils import optional_import_block, require_optional_import
 from ..tools import Tool, Toolkit
 
 with optional_import_block():
-    from mcp import ClientSession
-    from mcp.types import (
-        CallToolResult,
-        ReadResourceResult,
-        ResourceTemplate,
-        TextContent,
-    )
-    from mcp.types import (
-        Tool as MCPTool,
-    )
+    from mcp.shared.message import SessionMessage
+    from mcp.types import CallToolResult, ReadResourceResult, ResourceTemplate, TextContent
+    from mcp.types import Tool as MCPTool
 
 __all__ = ["ResultSaved", "create_toolkit"]
+
+# Type definitions
+EncodingErrorHandlerType = Literal["strict", "ignore", "replace"]
+
+# Default constants
+DEFAULT_TEXT_ENCODING = "utf-8"
+DEFAULT_TEXT_ENCODING_ERROR_HANDLER: EncodingErrorHandlerType = "strict"
+DEFAULT_HTTP_REQUEST_TIMEOUT = 5
+DEFAULT_SSE_EVENT_READ_TIMEOUT = 60 * 5
+DEFAULT_STREAMABLE_HTTP_REQUEST_TIMEOUT = timedelta(seconds=30)
+DEFAULT_STREAMABLE_HTTP_SSE_EVENT_READ_TIMEOUT = timedelta(seconds=60 * 5)
+
+
+class SessionConfigProtocol(Protocol):
+    """Protocol for session configuration classes that can create MCP sessions."""
+
+    server_name: str
+
+    @asynccontextmanager
+    async def create_session(self, exit_stack: AsyncExitStack) -> AsyncIterator[ClientSession]:
+        """Create a session using the given exit stack."""
+        try:
+            yield cast(ClientSession, None)  # placeholder yield to satisfy AsyncIterator type
+        except Exception:
+            raise NotImplementedError
+
+
+class BasicSessionConfig(BaseModel):
+    """Basic session configuration."""
+
+    server_name: str = Field(..., description="Name of the server")
+
+    async def initialize(
+        self,
+        client: AsyncContextManager[
+            tuple[
+                MemoryObjectReceiveStream[SessionMessage | Exception],
+                MemoryObjectSendStream[SessionMessage],
+            ]
+        ],
+        exit_stack: AsyncExitStack,
+    ) -> ClientSession:
+        """Initialize the session."""
+        reader, writer = await exit_stack.enter_async_context(client)
+        session = cast(
+            ClientSession,
+            await exit_stack.enter_async_context(ClientSession(reader, writer)),
+        )
+        return session
+
+
+class SseConfig(BasicSessionConfig):
+    """Configuration for a single SSE MCP server."""
+
+    url: str = Field(..., description="URL of the SSE server")
+    headers: Optional[Dict[str, Any]] = Field(default=None, description="HTTP headers to send to the SSE endpoint")
+    timeout: float = Field(default=DEFAULT_HTTP_REQUEST_TIMEOUT, description="HTTP timeout")
+    sse_read_timeout: float = Field(default=DEFAULT_SSE_EVENT_READ_TIMEOUT, description="SSE read timeout")
+
+    @asynccontextmanager
+    async def create_session(self, exit_stack: AsyncExitStack) -> AsyncIterator[ClientSession]:
+        """
+        Create a new session to an MCP server using SSE transport.
+
+        Args:
+            exit_stack: AsyncExitStack for managing async resources
+
+        Yields:
+            ClientSession: The MCP client session
+        """
+        # Create and store the connection
+        client = sse_client(self.url, self.headers, self.timeout, self.sse_read_timeout)
+        yield await self.initialize(client, exit_stack)
+
+
+class StdioConfig(BasicSessionConfig):
+    """Configuration for a single stdio MCP server."""
+
+    command: str = Field(..., description="Command to execute")
+    args: List[str] = Field(..., description="Arguments for the command")
+    transport: Literal["stdio"] = Field(default="stdio", description="Transport type")
+    environment: Optional[Dict[str, str]] = Field(default=None, description="Environment variables")
+    working_dir: Optional[Union[str, Path]] = Field(default=None, description="Working directory")
+    encoding: str = Field(default=DEFAULT_TEXT_ENCODING, description="Character encoding")
+    encoding_error_handler: EncodingErrorHandlerType = Field(
+        default=DEFAULT_TEXT_ENCODING_ERROR_HANDLER, description="How to handle encoding errors"
+    )
+    session_options: Optional[Dict[str, Any]] = Field(default=None, description="Additional session options")
+
+    @asynccontextmanager
+    async def create_session(self, exit_stack: AsyncExitStack) -> AsyncIterator[ClientSession]:
+        """
+        Create a new session to an MCP server using stdio transport.
+
+        Args:
+            exit_stack: AsyncExitStack for managing async resources
+
+        Yields:
+            ClientSession: The MCP client session
+        """
+        client = stdio_client(
+            StdioServerParameters(
+                command=self.command,
+                args=self.args,
+                env=self.environment,
+                encoding=self.encoding,
+                encoding_error_handler=self.encoding_error_handler,
+            )
+        )
+        yield await self.initialize(client, exit_stack)
+
+
+class MCPConfig(BaseModel):
+    """Configuration for multiple MCP sessions using stdio transport."""
+
+    # we should use final classes to allow pydantic to validate the type
+    servers: List[SseConfig | StdioConfig] = Field(..., description="List of stdio & sse server configurations")
 
 
 class MCPClient:
@@ -98,7 +225,7 @@ Here is the correct format for the URI template:
 """
 
         async def call_resource(uri: Annotated[str, uri_description]) -> Union[ReadResourceResult, ResultSaved]:  # type: ignore[no-any-unimported]
-            result = await session.read_resource(uri)
+            result = await session.read_resource(AnyUrl(uri))
 
             if not resource_download_folder:
                 return result
@@ -169,6 +296,36 @@ Here is the correct format for the URI template:
         return None
 
 
+class MCPClientSessionManager:
+    """
+    A class to manage MCP client sessions.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the MCP client session manager."""
+        self.exit_stack = AsyncExitStack()
+        self.sessions: dict[str, ClientSession] = {}
+
+    @asynccontextmanager
+    async def open_session(
+        self,
+        config: SessionConfigProtocol,
+    ) -> AsyncIterator[ClientSession]:
+        """
+        Open a new session to an MCP server based on configuration.
+
+        Args:
+            config: SessionConfigProtocol object containing session configuration
+
+        Yields:
+            ClientSession: The MCP client session
+        """
+        async with config.create_session(self.exit_stack) as session:
+            await session.initialize()
+            self.sessions[config.server_name] = session
+            yield session
+
+
 @export_module("autogen.mcp")
 async def create_toolkit(
     session: "ClientSession",
@@ -187,9 +344,8 @@ async def create_toolkit(
     Returns:
         Toolkit: The toolkit containing the converted tools.
     """
-    if resource_download_folder:
-        if isinstance(resource_download_folder, str):
-            resource_download_folder = Path(resource_download_folder)
+    if resource_download_folder is not None:
+        resource_download_folder = Path(resource_download_folder)
         await anyio.to_thread.run_sync(lambda: resource_download_folder.mkdir(parents=True, exist_ok=True))
 
     return await MCPClient.load_mcp_toolkit(
