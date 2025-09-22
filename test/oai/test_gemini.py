@@ -20,7 +20,7 @@ with optional_import_block() as result:
     from google.api_core.exceptions import InternalServerError
     from google.auth.credentials import Credentials
     from google.cloud.aiplatform.initializer import global_config as vertexai_global_config
-    from google.genai.types import GenerateContentResponse, GoogleSearch, Tool
+    from google.genai.types import GenerateContentResponse, GoogleSearch, HttpOptions, Tool
     from vertexai.generative_models import GenerationResponse as VertexAIGenerationResponse
     from vertexai.generative_models import HarmBlockThreshold as VertexAIHarmBlockThreshold
     from vertexai.generative_models import HarmCategory as VertexAIHarmCategory
@@ -29,7 +29,11 @@ with optional_import_block() as result:
 
 def test_gemini_llm_config_entry():
     gemini_llm_config = GeminiLLMConfigEntry(
-        model="gemini-2.0-flash-lite", api_key="dummy_api_key", project_id="fake-project-id", location="us-west1"
+        model="gemini-2.0-flash-lite",
+        api_key="dummy_api_key",
+        project_id="fake-project-id",
+        location="us-west1",
+        proxy="http://mock-test-proxy:90/",
     )
     expected = {
         "api_type": "google",
@@ -39,14 +43,12 @@ def test_gemini_llm_config_entry():
         "location": "us-west1",
         "stream": False,
         "tags": [],
+        "proxy": "http://mock-test-proxy:90/",
     }
     actual = gemini_llm_config.model_dump()
     assert actual == expected, actual
 
-    llm_config = LLMConfig(
-        config_list=[gemini_llm_config],
-    )
-    assert llm_config.model_dump() == {
+    assert LLMConfig(gemini_llm_config).model_dump() == {
         "config_list": [expected],
     }
 
@@ -232,9 +234,7 @@ class TestGeminiClient:
         }
         converted_safety_settings = GeminiClient._to_vertexai_safety_settings(safety_settings)
 
-        expected_safety_settings = {
-            category: VertexAIHarmBlockThreshold.BLOCK_ONLY_HIGH for category in safety_settings
-        }
+        expected_safety_settings = dict.fromkeys(safety_settings, VertexAIHarmBlockThreshold.BLOCK_ONLY_HIGH)
 
         def compare_safety_settings(converted_safety_settings, expected_safety_settings):
             for expected_setting_key in expected_safety_settings:
@@ -452,33 +452,6 @@ class TestGeminiClient:
         ):
             gemini_client._convert_json_response(no_json_response)
 
-    def test_convert_type_null_to_nullable(self):
-        initial_schema = {
-            "type": "object",
-            "properties": {
-                "additional_notes": {
-                    "anyOf": [{"type": "string"}, {"type": "null"}],
-                    "default": None,
-                    "description": "Additional notes",
-                }
-            },
-            "required": [],
-        }
-
-        expected_schema = {
-            "properties": {
-                "additional_notes": {
-                    "anyOf": [{"type": "string"}, {"nullable": True}],
-                    "default": None,
-                    "description": "Additional notes",
-                }
-            },
-            "required": [],
-            "type": "object",
-        }
-        converted_schema = GeminiClient._convert_type_null_to_nullable(initial_schema)
-        assert converted_schema == expected_schema
-
     @pytest.fixture
     def nested_function_parameters(self) -> dict[str, Any]:
         return {
@@ -557,6 +530,62 @@ class TestGeminiClient:
             "required": ["task"],
         }
         assert result == expected_result, result
+
+    @patch("autogen.oai.gemini.genai.Client")
+    @patch("autogen.oai.gemini.GenerateContentConfig")
+    def test_generation_config_with_proxy(self, mock_generate_content_config, mock_generative_client, gemini_client):
+        """Test that proxy parameter is properly set in Gemini LLM Config"""
+        # Mock setup
+        mock_chat = MagicMock()
+        mock_generative_client.return_value.chats.create.return_value = mock_chat
+
+        mock_text_part = MagicMock()
+        mock_text_part.text = "Mock response"
+        mock_text_part.function_call = None
+
+        mock_usage_metadata = MagicMock()
+        mock_usage_metadata.prompt_token_count = 10
+        mock_usage_metadata.candidates_token_count = 5
+
+        mock_candidate = MagicMock()
+        mock_candidate.content.parts = [mock_text_part]
+
+        mock_response = MagicMock(spec=GenerateContentResponse)
+        mock_response.usage_metadata = mock_usage_metadata
+        mock_response.candidates = [mock_candidate]
+
+        mock_chat.send_message.return_value = mock_response
+
+        # Call create with proxy parameter
+        gemini_client.create({
+            "model": "gemini-2.5-flash",
+            "messages": [{"content": "Hello", "role": "user"}],
+            "proxy": "http://mock-test-proxy:90/",
+            "temperature": 0.7,
+            "max_tokens": 265,
+            "top_p": 0.5,
+            "top_k": 3,
+        })
+
+        # Verify Client was called with correct parameters
+        client_kwargs = mock_generative_client.call_args.kwargs
+        assert "http_options" in client_kwargs
+        http_options = client_kwargs["http_options"]
+        assert isinstance(http_options, HttpOptions)
+        assert http_options.client_args == {"proxy": "http://mock-test-proxy:90/"}
+        assert http_options.async_client_args == {"proxy": "http://mock-test-proxy:90/"}
+
+        # Verify GenerateContentConfig was called with correct parameters
+        config_kwargs = mock_generate_content_config.call_args.kwargs
+        expected_config = {
+            "temperature": 0.7,
+            "max_output_tokens": 265,
+            "top_p": 0.5,
+            "top_k": 3,
+        }
+        for key, expected_value in expected_config.items():
+            assert key in config_kwargs, f"Expected key '{key}' not found in config kwargs"
+            assert config_kwargs[key] == expected_value, f"Expected {key}={expected_value}, got {config_kwargs[key]}"
 
     def test_create_gemini_function_parameters_with_nested_parameters(
         self, nested_function_parameters: dict[str, Any]

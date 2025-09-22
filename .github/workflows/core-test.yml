@@ -20,7 +20,7 @@ jobs:
     outputs:
       hasChanges: ${{ steps.filter.outputs.autogen == 'true' || steps.filter.outputs.test == 'true' || steps.filter.outputs.workflows == 'true' || steps.filter.outputs.setup == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -51,21 +51,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       AUTOGEN_USE_DOCKER: ${{ matrix.os != 'ubuntu-latest'  && 'False' }}
+      YEPCODE_API_TOKEN: ${{ secrets.YEPCODE_API_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        exclude:
-          - os: macos-latest
-            python-version: "3.9"
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Graphviz based on OS (needed for ReasoningAgent)
@@ -84,7 +83,7 @@ jobs:
           uv pip install --system -e .[test,cosmosdb,interop,redis,websockets,openai,docs]
       - name: Install optional dependencies for code executors
         run: |
-          uv pip install --system -e ".[jupyter-executor]"
+          uv pip install --system -e ".[jupyter-executor,yepcode]"
           python -m ipykernel install --user --name python3
       - name: Set AUTOGEN_USE_DOCKER based on OS
         shell: bash
@@ -125,13 +124,13 @@ jobs:
       - name: Fail workflow if build failed
         id: check_build_failed
         if: contains(join(needs.*.result, ','), 'failure')
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: core.setFailed('Build Failed!')
 
       - name: Fail workflow if build cancelled
         id: check_build_cancelled
         if: contains(join(needs.*.result, ','), 'cancelled')
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: core.setFailed('Build Cancelled!')
