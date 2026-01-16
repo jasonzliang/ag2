@@ -247,8 +247,7 @@ class ConversableAgent(LLMAgent):
         else:
             self._oai_messages = chat_messages
 
-        # self._oai_system_message = [{"content": system_message, "role": "system"}]
-        self._oai_system_message = [{"content": system_message, "role": role_for_system_message}]
+        self._oai_system_message = [{"content": system_message, "role": "system"}]
         self._description = description if description is not None else system_message
         self._is_termination_msg = (
             is_termination_msg
@@ -1447,21 +1446,6 @@ class ConversableAgent(LLMAgent):
             agent._raise_exception_on_async_reply_functions()
             agent.previous_cache = agent.client_cache
             agent.client_cache = cache
-        # if isinstance(max_turns, int):
-        #     self._prepare_chat(recipient, clear_history, reply_at_receive=False)
-        #     for _ in range(max_turns):
-        #         if _ == 0:
-        #             if isinstance(message, Callable):
-        #                 msg2send = message(_chat_info["sender"], _chat_info["recipient"], kwargs)
-        #             else:
-        #                 msg2send = self.generate_init_message(message, **kwargs)
-        #         else:
-        #             msg2send = self.generate_reply(messages=self.chat_messages[recipient], sender=recipient)
-        #         if msg2send is None:
-        #             break
-        #         self.send(msg2send, recipient, request_reply=True, silent=silent)
-        # else:
-
         if isinstance(max_turns, int):
             self._prepare_chat(recipient, clear_history, reply_at_receive=False)
             is_termination = False
@@ -1481,10 +1465,7 @@ class ConversableAgent(LLMAgent):
                     msg2send = self.generate_reply(messages=self.chat_messages[recipient], sender=recipient)
                 if msg2send is None:
                     break
-
-                # Send message and ensure tool calls are completed
                 self.send(msg2send, recipient, request_reply=True, silent=silent)
-
             else:  # No breaks in the for loop, so we have reached max turns
                 iostream.send(
                     TerminationEvent(
@@ -2208,7 +2189,6 @@ class ConversableAgent(LLMAgent):
                 prompt, msg_list, llm_agent=agent, cache=summary_args.get("cache"), role=role
             )
         except Exception as e:
-            # import traceback; traceback.print_exc()
             warnings.warn(
                 f"Cannot extract summary using reflection_with_llm: {e}. Using an empty str as summary.", UserWarning
             )
