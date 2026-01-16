@@ -1485,13 +1485,6 @@ class ConversableAgent(LLMAgent):
                 # Send message and ensure tool calls are completed
                 self.send(msg2send, recipient, request_reply=True, silent=silent)
 
-                # Add an explicit step to handle any pending tool calls
-                last_message = self.chat_messages[recipient][-1]
-                if last_message.get("tool_calls"):
-                    tool_reply = self.generate_tool_calls_reply(messages=self.chat_messages[recipient], sender=recipient)
-                    if tool_reply[1]:  # If there's a tool response
-                        self.send(tool_reply[1], recipient, silent=silent)
-
             else:  # No breaks in the for loop, so we have reached max turns
                 iostream.send(
                     TerminationEvent(
