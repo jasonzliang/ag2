@@ -169,21 +169,12 @@ class ConversableAgent(LLMAgent):
         chat_messages: dict[Agent, list[dict[str, Any]]] | None = None,
         silent: bool | None = None,
         context_variables: Optional["ContextVariables"] = None,
-<<<<<<< HEAD
-        functions: Union[list[Callable[..., Any]], Callable[..., Any]] = None,
-        update_agent_state_before_reply: Optional[
-            Union[list[Union[Callable, UpdateSystemMessage]], Callable, UpdateSystemMessage]
-        ] = None,
-        role_for_system_message: Literal["system", "user"] = "system",
-        handoffs: Optional[Handoffs] = None,
-=======
         functions: list[Callable[..., Any]] | Callable[..., Any] = None,
         update_agent_state_before_reply: list[Callable | UpdateSystemMessage]
         | Callable
         | UpdateSystemMessage
         | None = None,
         handoffs: Handoffs | None = None,
->>>>>>> upstream/main
     ):
         """Args:\n
         1) name (str): name of the agent.\n
@@ -1493,7 +1484,6 @@ class ConversableAgent(LLMAgent):
 
                 # Send message and ensure tool calls are completed
                 self.send(msg2send, recipient, request_reply=True, silent=silent)
-<<<<<<< HEAD
 
                 # Add an explicit step to handle any pending tool calls
                 last_message = self.chat_messages[recipient][-1]
@@ -1502,8 +1492,6 @@ class ConversableAgent(LLMAgent):
                     if tool_reply[1]:  # If there's a tool response
                         self.send(tool_reply[1], recipient, silent=silent)
 
-=======
->>>>>>> upstream/main
             else:  # No breaks in the for loop, so we have reached max turns
                 iostream.send(
                     TerminationEvent(

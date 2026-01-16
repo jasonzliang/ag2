@@ -187,30 +187,12 @@ test/agentchat/test_agent_scripts/
 .db
 local_cache
 
-<<<<<<< HEAD
-
-notebook/result.png
-notebook/coding
-=======
-chroma
->>>>>>> upstream/main
 notebook/reasoning_tree.json
-chroma
-
 client_secret*.json
 *token*.json
 *credentials.json
 notebook/*_server.py
 
-<<<<<<< HEAD
-notebook/mcp/wikipedia_articles
-notebook/mcp/arxiv_papers
-
-*CLAUDE.md
-
-.DS_store
-.tags*
-=======
 notebook/result.png
 notebook/coding/
 
@@ -219,6 +201,7 @@ notebook/mcp/arxiv_papers/
 
 remote-examples
 
-*CLAUDE.md:
+*CLAUDE.md
 .cursor/
->>>>>>> upstream/main
+
+.tags*
