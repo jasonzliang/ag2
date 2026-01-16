@@ -202,7 +202,9 @@ notebook/mcp/arxiv_papers/
 
 remote-examples
 
-*CLAUDE.md
+*CLAUDE.md:
 .cursor/
 
+# Jason's files
+notebook/*.py
 .tags*
